@@ -4,7 +4,7 @@ local Radio = {
 	On = false,
 	Enabled = true,
 	Handle = nil,
-	Prop = GetHashKey('prop_cs_hand_radio'),
+	Prop = GetHashKey('prop_cs_hand_radio'), 
 	Bone = 28422,
 	Offset = vector3(0.0, 0.0, 0.0),
 	Rotation = vector3(0.0, 0.0, 0.0),
@@ -47,7 +47,7 @@ Radio.Labels = {}
 local unarmed = GetHashKey('weapon_unarmed')
 Radio.Commands = {
 	{
-		Enabled = true,
+		Enabled = true, 
 		Name = "radio", 
 		Help = "Toggle hand radio", 
 		Params = {},
@@ -70,7 +70,7 @@ Radio.Commands = {
 	},
 	{
 		Enabled = true, 
-		Name = "frequency",
+		Name = "frequency", 
 		Help = "Change radio frequency", 
 		Params = {
 			{name = "number", "Enter frequency"}
@@ -113,12 +113,14 @@ Radio.Commands = {
 	},
 }
 
+
 for i = 1, #Radio.Commands do
 	if Radio.Commands[i].Enabled then
 		RegisterCommand(Radio.Commands[i].Name, Radio.Commands[i].Handler, false)
 		TriggerEvent("chat:addSuggestion", "/" .. Radio.Commands[i].Name, Radio.Commands[i].Help, Radio.Commands[i].Params)
 	end
 end
+
 
 function Radio:Toggle(toggle)
 	local playerPed = PlayerPedId()
@@ -190,13 +192,16 @@ function Radio:Toggle(toggle)
 	end
 end
 
+
 function Radio:Add(id)
 	exports["pma-voice"]:setRadioChannel(id)
 end
 
+
 function Radio:Remove()
 	exports["pma-voice"]:setRadioChannel(0)
 end
+
 
 function Radio:Decrease()
 	if self.On then
@@ -223,6 +228,7 @@ function Radio:Decrease()
 	SendNUIMessage({ radioFrequency = radioConfig.Frequency.Current, isRestricted = isRestrictedFrequency(radioConfig.Frequency.Current) })
 end
 
+
 function Radio:Increase()
 	if self.On then
 		repeat
@@ -248,6 +254,7 @@ function Radio:Increase()
 	SendNUIMessage({ radioFrequency = radioConfig.Frequency.Current, isRestricted = isRestrictedFrequency(radioConfig.Frequency.Current) })
 end
 
+
 function GenerateFrequencyList()
 	radioConfig.Frequency.List = {}
 
@@ -258,9 +265,12 @@ function GenerateFrequencyList()
 	end
 end
 
+
 function IsRadioOpen()
 	return Radio.Open
 end
+
+
 function IsRadioOn()
 	return Radio.On
 end
@@ -311,7 +321,7 @@ function SetAllowRadioWhenClosed(value)
 	end
 end
 
-RegisterNUICallback('submitFrequency', function(data, cb)
+RegisterNUICallback('submitFrequency1', function(data, cb)
 	local frequency = tonumber(data.frequency)
 	if frequency and frequency >= radioConfig.Frequency.Min and frequency <= radioConfig.Frequency.Max then
 		local idx = nil
@@ -491,7 +501,7 @@ Citizen.CreateThread(function()
 			TriggerEvent('radio:inputFrequency', playerPed)
 		end
 
-		if IsDisabledControlJustPressed(0, radioConfig.Controls.ToggleClicks.Key) then
+		if Radio.Open and IsDisabledControlJustPressed(0, radioConfig.Controls.ToggleClicks.Key) then 
 			TriggerEvent('radio:toggleClicks', playerPed)
 		end
 	end
@@ -508,7 +518,7 @@ AddEventHandler('radio:toggleActivator', function(playerPed)
 end)
 
 AddEventHandler('radio:toggleRadio', function(playerPed)
-	if not isRestrictedFrequency(radioConfig.Frequency.Current) then
+	if Radio.Open and not isRestrictedFrequency(radioConfig.Frequency.Current) then 
 		Radio.On = not Radio.On
 
 		exports["pma-voice"]:setVoiceProperty("radioEnabled", Radio.On)
@@ -553,44 +563,12 @@ AddEventHandler('radio:increaseFrequency', function(playerPed)
 end)
 
 AddEventHandler('radio:inputFrequency', function(playerPed)
-	if not Radio.On then
+	if Radio.Open and not Radio.On then 
 		if not radioConfig.Controls.Input.Pressed then
 			radioConfig.Controls.Input.Pressed = true
 			Citizen.CreateThread(function()
-				--DisplayOnscreenKeyboard(1, Radio.Labels[3][1], "", radioConfig.Frequency.Current, "", "", "", 3)
-
-				while UpdateOnscreenKeyboard() ~= 1 and UpdateOnscreenKeyboard() ~= 2 do
-					Citizen.Wait(150)
-				end
-
-				local input = nil
-
-				if UpdateOnscreenKeyboard() ~= 2 then
-					input = GetOnscreenKeyboardResult()
-				end
-
-				Citizen.Wait(0)
-				
-				input = tonumber(input)
-
-				if input ~= nil then
-					if input >= radioConfig.Frequency.List[1] and input <= radioConfig.Frequency.List[#radioConfig.Frequency.List] and input == math.floor(input) then
-						local idx = nil
-
-						for i = 1, #radioConfig.Frequency.List do
-							if radioConfig.Frequency.List[i] == input then
-								idx = i
-								break
-							end
-						end
-
-						if idx ~= nil then
-							radioConfig.Frequency.CurrentIndex = idx
-							radioConfig.Frequency.Current = input
-						end
-					end
-				end
-				
+				SendNUIMessage({ showInputMenu = true })
+				SetNuiFocus(true, true)
 				radioConfig.Controls.Input.Pressed = false
 			end)
 		end
