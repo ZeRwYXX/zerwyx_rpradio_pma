@@ -1,5 +1,12 @@
 # RP Radio
 
+
+## Images 
+![image](https://github.com/user-attachments/assets/d660c888-71f3-4698-b7cb-18615d292446) ![image](https://github.com/user-attachments/assets/291f1c2c-cebf-4607-89ba-56390ba5ba94)
+
+
+
+
 ## 🇬🇧 English
 
 ### Description
