@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>zerwyx_rpradio_pma</title>
+		<link rel="stylesheet" type="text/css" href="style.css">
+		<script type="text/javascript">
+			let notificationShown = false;
+
+			window.addEventListener("message", function(event) {
+				var item = event.data;
+				
+				if (item.sound && item.volume) {
+					var audioElement = document.getElementById(item.sound);
+					if (audioElement) {
+						audioElement.volume = item.volume;
+						audioElement.play().catch(error => {
+							console.error('Error playing audio:', error);
+						});
+					}
+				}
+				
+				if (item.showMenu !== undefined) {
+					var menuElement = document.querySelector('.menu');
+					if (menuElement) {
+						menuElement.style.display = item.showMenu ? 'block' : 'none';
+						if (item.showMenu) {
+							updateRadioStatus(item.radioStatus, item.isRestricted);
+							document.getElementById('radioFrequency').innerText = item.radioFrequency + ' MHz';
+						}
+					}
+				}
+
+				if (item.showInputMenu !== undefined) {
+					var inputMenuElement = document.querySelector('.input-menu');
+					if (inputMenuElement) {
+						inputMenuElement.style.display = item.showInputMenu ? 'block' : 'none';
+					}
+				}
+
+				if (item.radioTalking !== undefined) {
+					var voiceIcon = document.getElementById('voiceIcon');
+					if (item.radioTalking) {
+						voiceIcon.classList.add('talking');
+					} else {
+						voiceIcon.classList.remove('talking');
+					}
+				}
+			});
+
+			function submitFrequency() {
+				var frequency = document.getElementById('frequencyInput').value;
+				fetch('https://zerwyx_rpradio_pma/submitFrequency', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ frequency: frequency })
+				}).then(() => {
+					var inputMenuElement = document.querySelector('.input-menu');
+					if (inputMenuElement) {
+						inputMenuElement.style.display = 'none';
+					}
+					fetch('https://zerwyx_rpradio_pma/closeInputMenu', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						}
+					}).catch(error => {
+						console.error('Error:', error);
+					});
+				}).catch(error => {
+					console.error('Error:', error);
+				});
+			}
+
+			function showNotification(message) {
+				if (!notificationShown) {
+					var notification = document.createElement('div');
+					notification.className = 'notification';
+					notification.innerHTML = '<i class="fas fa-exclamation-circle"></i>' + message;
+					document.getElementById('notificationContainer').appendChild(notification);
+					setTimeout(function() {
+						notification.remove();
+					}, 3000);
+					notificationShown = true;
+				}
+			}
+
+			function updateRadioStatus(isOn, isRestricted) {
+				var switchElement = document.getElementById('radioSwitch');
+				var voiceIcon = document.getElementById('voiceIcon');
+				if (isRestricted) {
+					switchElement.classList.add('disabled');
+					showNotification('Vous n\'avez pas accès à cette fréquence.');
+				} else {
+					switchElement.classList.remove('disabled');
+					notificationShown = false; 
+				}
+				if (isOn) {
+					switchElement.classList.add('on');
+					switchElement.classList.remove('off');
+					voiceIcon.style.display = 'block';
+				} else {
+					switchElement.classList.add('off');
+					switchElement.classList.remove('on');
+					voiceIcon.style.display = 'none';
+				}
+			}
+		</script>
+	</head>
+	<body>
+		<audio id="audio_on" src="on.ogg"></audio>
+		<audio id="audio_off" src="off.ogg"></audio>
+		<div class="menu" style="display: none;">
+			<h1>Menu Radio</h1>
+			<p>Statut: <span id="radioSwitch" class="switch off"></span></p>
+			<p>Fréquence: <span id="radioFrequency">1 MHz</span></p>
+			<p>Touches:</p>
+			<ul>
+				<li>Ouvrir/Fermer Radio: F2</li>
+				<li>Activer/Désactiver Radio: E</li>
+				<li>Augmenter Fréquence: Flèche Droite</li>
+				<li>Diminuer Fréquence: Flèche Gauche</li>
+				<li>Choisir Fréquence: Entrée</li>
+				<li>Basculer Clics: Tab</li>
+			</ul>
+			<div id="notificationContainer"></div>
+		</div>
+		<div class="input-menu">
+			<h1>Entrer la Fréquence</h1>
+			<input type="number" id="frequencyInput" placeholder="Fréquence (1-1000)">
+			<button onclick="submitFrequency()">Valider</button>
+		</div>
+		<div id="voiceIcon" class="voice-icon" style="display: none;">
+			<i class="fas fa-microphone"></i>
+		</div>
+	</body>
+</html>
